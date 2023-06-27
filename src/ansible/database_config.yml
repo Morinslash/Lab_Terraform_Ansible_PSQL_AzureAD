@@ -1,0 +1,36 @@
+- name: Configure database 
+  hosts: localhost
+  tasks:
+    - name: Utility present
+      ansible.builtin.package:
+        name: python3-psycopg2
+        state: present
+    - name: Alter schema owner
+      community.postgresql.postgresql_schema:
+        login_host: 10.88.0.8
+        login_user: admin
+        login_password: admin
+        db: testdata_2
+        name: public
+        owner: admin
+    - name: Revoke create on schema public
+      community.postgresql.postgresql_privs:
+        login_host: 10.88.0.8
+        login_user: admin
+        login_password: admin
+        db: testdata_2
+        state: absent
+        type: schema
+        objs: public
+        privs: create
+        role: public
+    - name: Revoke all on database from public
+      community.postgresql.postgresql_privs:
+        login_host: 10.88.0.8
+        login_user: admin
+        login_password: admin
+        db: testdata_2
+        state: absent
+        type: database
+        privs: all
+        role: public

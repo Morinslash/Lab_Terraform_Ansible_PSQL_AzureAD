@@ -1,6 +1,0 @@
-DO $$
-BEGIN
-CREATE ROLE test_user;
-EXCEPTION WHEN duplicate_object THEN RAISE NOTICE '%, skipping', SQLERRM USING ERRCODE = SQLSTATE;
-END
-$$;
