@@ -1,0 +1,19 @@
+- name: Db Config
+  hosts: localhost
+  vars:
+    common_config:
+        login_host: 10.88.0.8
+        login_user: admin
+        login_password: admin
+        owner: admin
+
+  tasks:
+    - name: Utility present
+      ansible.builtin.package:
+        name: python3-psycopg2
+        state: present
+    - name: Loop over databases
+      ansible.builtin.include_tasks: database_config.yml
+      loop:
+        - { db: testdata }
+        - { db: testdata_2 }

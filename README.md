@@ -8,7 +8,7 @@ docker build -t ansible-image:v1.0 .
 Once the container is locally available we can start it and exec directly into the container shell
 
 ```bash
-docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/sh ansible-image:v1.0
+docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/bash ansible-image:v1.0
 ```
 
 this command will automatically remove container when we exit.
