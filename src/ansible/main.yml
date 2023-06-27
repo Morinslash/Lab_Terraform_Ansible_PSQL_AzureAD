@@ -1,0 +1,14 @@
+---
+- name: Demo 
+  hosts: localhost
+  tasks:
+    - name: Utility present
+      ansible.builtin.package:
+        name: python3-psycopg2
+        state: present
+    - name: excute script
+      community.postgresql.postgresql_script:
+        login_host: 10.88.0.8
+        login_user: admin
+        login_password: admin
+        path: test.sql
