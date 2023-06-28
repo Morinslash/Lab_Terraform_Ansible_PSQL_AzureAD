@@ -1,28 +1,28 @@
-- name: Alter schema owner
+- name: Set connection
+  set_fact:
+    pg_connect: &pg_connect
+      login_host: "{{ common_config.login_host }}"
+      login_user: "{{ common_config.login_user }}"
+      login_password: "{{ common_config.login_password }}"
+- name: ALTER SCHEMA PUBLIC OWNER TO {{ common_config.owner }}
   community.postgresql.postgresql_schema:
-    login_host: "{{ common_config.login_host }}"
-    login_user: "{{ common_config.login_user }}"
-    login_password: "{{ common_config.login_password }}"
-    db: "{{ item.db }}"
+    <<: *pg_connect
+    db: "{{ item }}"
     name: public
-    owner: "{{ common_config.owner }}"
-- name: Revoke create on schema public
+    owner: "{{ common_config.login_user }}"
+- name: REVOKE CREATE ON SCHEMA PUBLIC FROM PUBLIC
   community.postgresql.postgresql_privs:
-    login_host: "{{ common_config.login_host }}"
-    login_user: "{{ common_config.login_user }}"
-    login_password: "{{ common_config.login_password }}"
-    db: "{{ item.db }}"
+    <<: *pg_connect
+    db: "{{ item }}"
     state: absent
     type: schema
     objs: public
     privs: create
     role: public
-- name: Revoke all on database from public
+- name: REVOKE ALL ON DATABASE {{ item }} FROM PUBLIC
   community.postgresql.postgresql_privs:
-    login_host: "{{ common_config.login_host }}"
-    login_user: "{{ common_config.login_user }}"
-    login_password: "{{ common_config.login_password }}"
-    db: "{{ item.db }}"
+    <<: *pg_connect
+    db: "{{ item }}"
     state: absent
     type: database
     privs: all

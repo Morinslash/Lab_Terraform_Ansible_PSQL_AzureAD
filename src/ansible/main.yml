@@ -5,15 +5,18 @@
         login_host: 10.88.0.8
         login_user: admin
         login_password: admin
-        owner: admin
+    database_names:
+      - testdata
+      - testdata_2
 
   tasks:
     - name: Utility present
       ansible.builtin.package:
         name: python3-psycopg2
         state: present
-    - name: Loop over databases
+    - name: Configure Databases
       ansible.builtin.include_tasks: database_config.yml
-      loop:
-        - { db: testdata }
-        - { db: testdata_2 }
+      loop: "{{ database_names }}"
+    - name: Create Roles
+      ansible.builtin.include_tasks: azure_ad_role_config.yml
+      loop: "{{ database_names }}"

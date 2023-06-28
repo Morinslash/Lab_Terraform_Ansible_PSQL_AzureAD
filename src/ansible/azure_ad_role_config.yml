@@ -1,0 +1,54 @@
+- name: Set connection data
+  set_fact:
+    db_role_name: "{{ item }}-user"
+    pg_connect: &pg_connect
+      login_host: "{{ common_config.login_host }}"
+      login_user: "{{ common_config.login_user }}"
+      login_password: "{{ common_config.login_password }}"
+- name: CREATE ROLE {{ db_role_name }} WITH LOGIN
+  community.postgresql.postgresql_user:
+    <<: *pg_connect
+    name: "{{ db_role_name }}"
+    password: hello #TODO delete this later as it's local need only!
+    role_attr_flags: LOGIN
+- name: IN ROLE azure_ad_user
+  community.postgresql.postgresql_membership:
+    <<: *pg_connect
+    groups:
+    - azure_ad_user
+    target_role: "{{ db_role_name }}"
+    state: present
+- name: GRANT CONNECT ON DATABASE {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ item }}"
+    state: present
+    privs: CONNECT
+    type: database
+    role: "{{ db_role_name }}"
+- name: GRANT USAGE ON SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ item }}"
+    state: present
+    privs: USAGE
+    type: schema
+    objs: public
+    role: "{{ db_role_name }}"
+- name: GRANT SELECT INSERT UPDATE DELETE ON ALL TABLES IN SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ item }}"
+      state: present
+      privs: SELECT,INSERT,UPDATE,DELETE
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT SELECT INSERT UPDATE DELETE ON TABLE TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ item }}"
+      state: present
+      obj: TABLES
+      privs: SELECT,INSERT,UPDATE,DELETE
+      type: default_privs
+      role: "{{ db_role_name }}"
