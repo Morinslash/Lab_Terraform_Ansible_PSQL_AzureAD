@@ -1,0 +1,7 @@
+common_config:
+  login_host: 10.88.0.2
+  login_user: admin
+  login_password: admin
+database_names:
+  - testdata
+  - testdata_2

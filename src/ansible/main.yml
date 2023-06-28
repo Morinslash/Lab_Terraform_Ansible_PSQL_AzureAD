@@ -1,15 +1,14 @@
 - name: Db Config
   hosts: localhost
-  vars:
-    common_config:
-        login_host: 10.88.0.8
-        login_user: admin
-        login_password: admin
-    database_names:
-      - testdata
-      - testdata_2
-
+  vars_files:
+    - var_file.yml
   tasks:
+    - name: Print vars
+      debug:
+        var: common_config
+    - name: Print database
+      debug:
+        var: database_names
     - name: Utility present
       ansible.builtin.package:
         name: python3-psycopg2

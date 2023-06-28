@@ -52,3 +52,23 @@
       privs: SELECT,INSERT,UPDATE,DELETE
       type: default_privs
       role: "{{ db_role_name }}"
+- name: GRANT USAGE ON ALL SEQUENCES IN SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ item }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT USAGE ON SEQUENCES TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ item }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
