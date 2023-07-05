@@ -3,19 +3,28 @@
   vars_files:
     - var_file.yml
   tasks:
-    - name: Print vars
-      debug:
-        var: common_config
-    - name: Print database
-      debug:
-        var: database_names
     - name: Utility present
       ansible.builtin.package:
         name: python3-psycopg2
         state: present
+    - name: Get Databases Full Info
+      community.postgresql.postgresql_info:
+        login_host: "{{ common_config.login_host }}"
+        login_user: "{{ common_config.login_user }}"
+        login_password: "{{ common_config.login_password }}"
+        ssl_mode: "require"
+        db: postgres
+        filter: "databases"
+      register: db_list_full_info
+    - name: Get Databases Names and Filter defaults
+      set_fact:
+        db_names: "{{ db_list_full_info['databases'] | dict2items | map(attribute='key') | list | difference(['postgres', 'template1', 'azure_maintenance', 'azure_sys']) }}"
+    - name: Print database names
+      debug:
+        var: db_names
     - name: Configure Databases
       ansible.builtin.include_tasks: database_config.yml
-      loop: "{{ database_names }}"
+      loop: "{{ db_names }}"
     - name: Create Roles
       ansible.builtin.include_tasks: azure_ad_role_config.yml
-      loop: "{{ database_names }}"
+      loop: "{{ db_names }}"
