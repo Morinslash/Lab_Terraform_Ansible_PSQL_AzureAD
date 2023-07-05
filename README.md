@@ -79,3 +79,14 @@ In order to execute locally playbook with Postgresql container there are few req
 |                | Insert data                | x     |            |                       |
 |                | Delete data                | x     |            |                       |
 |                |                            |       |            |                       |
+
+---
+## Accessing Azure Posgresql
+
+```bash
+az login
+```
+
+```bash
+az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
+```

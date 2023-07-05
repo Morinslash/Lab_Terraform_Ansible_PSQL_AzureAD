@@ -5,15 +5,17 @@
       login_host: "{{ common_config.login_host }}"
       login_user: "{{ common_config.login_user }}"
       login_password: "{{ common_config.login_password }}"
+      ssl_mode: "require"
 - name: CREATE ROLE {{ db_role_name }} WITH LOGIN
   community.postgresql.postgresql_user:
     <<: *pg_connect
+    db: postgres
     name: "{{ db_role_name }}"
-    password: hello #TODO delete this later as it's local need only!
     role_attr_flags: LOGIN
 - name: IN ROLE azure_ad_user
   community.postgresql.postgresql_membership:
     <<: *pg_connect
+    db: postgres
     groups:
     - azure_ad_user
     target_role: "{{ db_role_name }}"

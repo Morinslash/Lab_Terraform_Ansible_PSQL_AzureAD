@@ -14,11 +14,12 @@ LEFT JOIN pg_roles rm ON m.member = rm.oid
 GROUP BY r.rolname, r.rolsuper, r.rolcreaterole, r.rolcreatedb, r.rolcanlogin, r.rolreplication, r.rolbypassrls
 ORDER BY r.rolname;
 
-create role "azure_ad_user";
+-- create role "azure_ad_user"; local only
 
 create database testdata;
 create database testdata_2;
 
+-- testing after integration
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL,
