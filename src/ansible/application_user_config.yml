@@ -1,6 +1,7 @@
 - name: Set connection data
   set_fact:
-    db_role_name: "{{ item }}-user"
+    db_role_name: "{{ item }}-app"
+    user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,hexdigits') }}"
     pg_connect: &pg_connect
       login_host: "{{ common_config.login_host }}"
       login_user: "{{ common_config.login_user }}"
@@ -11,15 +12,14 @@
     <<: *pg_connect
     db: postgres
     name: "{{ db_role_name }}"
+    password: "{{ user_password }}"
+    no_password_changes: true
     role_attr_flags: LOGIN
-- name: IN ROLE azure_ad_user
-  community.postgresql.postgresql_membership:
-    <<: *pg_connect
-    db: postgres
-    groups:
-    - azure_ad_user
-    target_role: "{{ db_role_name }}"
-    state: present
+  register: user_update
+- name: Only if changes in user
+  debug:
+    var: "{{user_password}}"
+  when: user_update is changed
 - name: GRANT CONNECT ON DATABASE {{ db_role_name }}
   community.postgresql.postgresql_privs:
     <<: *pg_connect

@@ -26,5 +26,8 @@
       ansible.builtin.include_tasks: database_config.yml
       loop: "{{ db_names }}"
     - name: Create Roles
-      ansible.builtin.include_tasks: azure_ad_role_config.yml
+      ansible.builtin.include_tasks: azure_ad_developer_config.yml
+      loop: "{{ db_names }}"    
+    - name: Create Roles
+      ansible.builtin.include_tasks: application_user_config.yml
       loop: "{{ db_names }}"
