@@ -2,5 +2,5 @@
   hosts: localhost
   tasks:
     - name: Print database names
-    debug:
-      var: hello_world
+      debug:
+        var: hello_world
