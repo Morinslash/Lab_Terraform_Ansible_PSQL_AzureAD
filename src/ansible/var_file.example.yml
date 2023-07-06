@@ -1,0 +1,11 @@
+database_config:
+  login_host: <posgres-host>
+  login_user: <username>@<server-name>
+  login_password: <az-cli-token> 
+  owner: <username>
+keyvault_config:
+  client_id: <sp-client-id>
+  secret: <sp-secret>
+  subscription_id: <sp-subscription>
+  tenant: <sp-tenant-id>
+  keyvault_uri: <vault-url>

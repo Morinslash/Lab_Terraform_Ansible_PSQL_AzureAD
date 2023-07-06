@@ -1,17 +1,13 @@
 - name: Db Config
   hosts: localhost
   vars_files:
-    - var_file.yml
+    - var_file.example.yml
   tasks:
-    - name: Utility present
-      ansible.builtin.package:
-        name: python3-psycopg2
-        state: present
     - name: Get Databases Full Info
       community.postgresql.postgresql_info:
-        login_host: "{{ common_config.login_host }}"
-        login_user: "{{ common_config.login_user }}"
-        login_password: "{{ common_config.login_password }}"
+        login_host: "{{ database_config.login_host }}"
+        login_user: "{{ database_config.login_user }}"
+        login_password: "{{ database_config.login_password }}"
         ssl_mode: "require"
         db: postgres
         filter: "databases"
@@ -25,9 +21,9 @@
     - name: Configure Databases
       ansible.builtin.include_tasks: database_config.yml
       loop: "{{ db_names }}"
-    - name: Create Roles
+    - name: Create Developer Role
       ansible.builtin.include_tasks: azure_ad_developer_config.yml
       loop: "{{ db_names }}"    
-    - name: Create Roles
+    - name: Create Aoplication User
       ansible.builtin.include_tasks: application_user_config.yml
       loop: "{{ db_names }}"

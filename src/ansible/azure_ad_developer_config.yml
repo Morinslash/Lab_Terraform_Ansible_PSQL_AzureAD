@@ -2,9 +2,9 @@
   set_fact:
     db_role_name: "{{ item }}-developer"
     pg_connect: &pg_connect
-      login_host: "{{ common_config.login_host }}"
-      login_user: "{{ common_config.login_user }}"
-      login_password: "{{ common_config.login_password }}"
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ database_config.login_password }}"
       ssl_mode: "require"
 - name: CREATE ROLE {{ db_role_name }} WITH LOGIN
   community.postgresql.postgresql_user:

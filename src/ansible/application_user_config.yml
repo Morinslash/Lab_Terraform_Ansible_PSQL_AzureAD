@@ -3,9 +3,9 @@
     db_role_name: "{{ item }}-app"
     user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,hexdigits') }}"
     pg_connect: &pg_connect
-      login_host: "{{ common_config.login_host }}"
-      login_user: "{{ common_config.login_user }}"
-      login_password: "{{ common_config.login_password }}"
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ database_config.login_password }}"
       ssl_mode: "require"
 - name: CREATE ROLE {{ db_role_name }} WITH LOGIN
   community.postgresql.postgresql_user:
@@ -16,10 +16,6 @@
     no_password_changes: true
     role_attr_flags: LOGIN
   register: user_update
-- name: Only if changes in user
-  debug:
-    var: "{{user_password}}"
-  when: user_update is changed
 - name: GRANT CONNECT ON DATABASE {{ db_role_name }}
   community.postgresql.postgresql_privs:
     <<: *pg_connect
@@ -74,3 +70,13 @@
       type: sequence
       objs: ALL_IN_SCHEMA
       role: "{{ db_role_name }}"
+- name: Update "{{ db_role_name }}" secret in key vault
+  azure.azcollection.azure_rm_keyvaultsecret:
+    client_id: "{{ keyvault_config.client_id }}"
+    secret: "{{ keyvault_config.secret }}"
+    subscription_id: "{{ keyvault_config.subscription_id }}"
+    tenant: "{{ keyvault_config.tenant }}"
+    secret_name: "{{ db_role_name }}"
+    secret_value: "{{ user_password }}"
+    keyvault_uri: "{{ keyvault_config.keyvault_uri}}"
+  when: user_update is changed

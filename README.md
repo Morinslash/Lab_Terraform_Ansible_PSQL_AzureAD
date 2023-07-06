@@ -46,7 +46,7 @@ ansible-playbook src/ansible/main.yml
 ```
 
 Access to the database with configured users:
-- **Username** *\<databasename>-user*
+- **Username** *\<databasename>-developer*
 - **Password** *hello*
 
 
@@ -61,24 +61,24 @@ In order to execute locally playbook with Postgresql container there are few req
 ## Testing Configuration
 ### [Test SQL](test.sql)
 
-| User           | Test                       | Local | Azure Psql | Terraform Integration |
-| -------------- | -------------------------- | ----- | ---------- | --------------------- |
-| Admin          | ---                        | ---   | ---        | ---                   |
-|                | Access to all DB           | x     |            |                       |
-|                | DBs ownership              | x     |            |                       |
-|                | Create Table               | x     |            |                       |
-|                | Insert data                | x     |            |                       |
-|                | Select other user          | x     |            |                       |
-|                | Drop Table                 | x     |            |                       |
-| ReadWrite user | ---                        | ---   | ---        | ---                   |
-|                | Member of **azure_ad_user** | x     |            |                       |
-|                | One DB access              | x     |            |                       |
-|                | No Drop, Create            | x     |            |                       |
-|                | Select Admin data          | x     |            |                       |
-|                | Update data                | x     |            |                       |
-|                | Insert data                | x     |            |                       |
-|                | Delete data                | x     |            |                       |
-|                |                            |       |            |                       |
+| User           | Test                        | Local | Azure Psql | Terraform Integration |
+| -------------- | --------------------------- | ----- | ---------- | --------------------- |
+| Admin          | ---                         | ---   | ---        | ---                   |
+|                | Access to all DB            | x     | x          |                       |
+|                | DBs ownership               | x     | x          |                       |
+|                | Create Table                | x     | x          |                       |
+|                | Insert data                 | x     | x          |                       |
+|                | Select other user           | x     | x          |                       |
+|                | Drop Table                  | x     | x          |                       |
+| ReadWrite user | ---                         | ---   | ---        | ---                   |
+|                | Member of **azure_ad_user** | x     | x          |                       |
+|                | One DB access               | x     | x          |                       |
+|                | No Drop, Create             | x     | x          |                       |
+|                | Select Admin data           | x     | x          |                       |
+|                | Update data                 | x     | x          |                       |
+|                | Insert data                 | x     | x          |                       |
+|                | Delete data                 | x     | x          |                       |
+|                |                             |       |            |                       |
 
 ---
 ## Accessing Azure Posgresql
@@ -89,4 +89,24 @@ az login
 
 ```bash
 az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
+```
+
+## Running playbook and providing var over CLI
+
+```bash
+ansible-playbook playbook.yml -e '{
+  "database_config": {
+    "login_host": "new_host", 
+    "login_user": "new_user", 
+    "login_password": "new_password", 
+    "owner": "new_owner"
+  }, 
+  "keyvault_config": {
+    "client_id": "new_client_id", 
+    "secret": "new_secret", 
+    "subscription_id": "new_subscription_id", 
+    "tenant": "new_tenant", 
+    "keyvault_uri": "new_uri"
+  }
+}'
 ```
