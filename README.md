@@ -40,53 +40,54 @@ To check if container is reachable inside docker network, run
 docker run -it --rm alpine ping <postgres-ip>
 ```
 
-To execute the playbook (assuming that we've started ansible container in root of the project) 
-```bash
-ansible-playbook src/ansible/main.yml
-```
-
-Access to the database with configured users:
-- **Username** *\<databasename>-developer*
-- **Password** *hello*
-
-
-## Pre-configuration for Ansible Playbook
+## Pre-configuration for Ansible Playbook for local experiments
 
 In order to execute locally playbook with Postgresql container there are few required steps to do manually
 -   Create role named **azure_ad_user**
--   Create tables specified in [var_file](var_file.yml)
--   Update he IP address of Postgresql container in [var_file](var_file.yml)
+-   Create databases for which we want to create users
+
+## Pre-configuration for Ansible Playbook for Azure PosgreSQL Single Server
+
+In order to execute playbook with Postgresql Single Server in Azure there are few required steps to do manually
+-   Set the **Active Directory admin** to a group
+-   Create databases for which we want to create users
+-   Create Azure AD Groups with names following pattern \<database-name>-developer
+-   Create Key Vault
+-   Create Service Principal with permissions to Key Vault
 
 ---
 ## Testing Configuration
 ### [Test SQL](test.sql)
 
-| User           | Test                        | Local | Azure Psql | Terraform Integration |
-| -------------- | --------------------------- | ----- | ---------- | --------------------- |
-| Admin          | ---                         | ---   | ---        | ---                   |
-|                | Access to all DB            | x     | x          |                       |
-|                | DBs ownership               | x     | x          |                       |
-|                | Create Table                | x     | x          |                       |
-|                | Insert data                 | x     | x          |                       |
-|                | Select other user           | x     | x          |                       |
-|                | Drop Table                  | x     | x          |                       |
-| ReadWrite user | ---                         | ---   | ---        | ---                   |
-|                | Member of **azure_ad_user** | x     | x          |                       |
-|                | One DB access               | x     | x          |                       |
-|                | No Drop, Create             | x     | x          |                       |
-|                | Select Admin data           | x     | x          |                       |
-|                | Update data                 | x     | x          |                       |
-|                | Insert data                 | x     | x          |                       |
-|                | Delete data                 | x     | x          |                       |
-|                |                             |       |            |                       |
+| User           | Test                         | Local | Azure Psql |
+| -------------- | ---------------------------- | ----- | ---------- |
+| Admin          | ---                          | ---   | ---        |
+|                | Access to all DB             | x     | x          |
+|                | DBs ownership                | x     | x          |
+|                | Create Table                 | x     | x          |
+|                | Insert data                  | x     | x          |
+|                | Select other user            | x     | x          |
+|                | Drop Table                   | x     | x          |
+| ReadWrite user | ---                          | ---   | ---        |
+|                | Member of **azure_ad_user**  | x     | x          |
+|                | One DB access                | x     | x          |
+|                | No Drop, Create              | x     | x          |
+|                | Select Admin data            | x     | x          |
+|                | Update data                  | x     | x          |
+|                | Insert data                  | x     | x          |
+|                | Delete data                  | x     | x          |
+| ReadWrite app  | ---                          |       |            |
+|                | Auto-generate password in KV | x     | x          |
 
 ---
 ## Accessing Azure Posgresql
 
+Login to Azure
 ```bash
 az login
 ```
 
+Obtain token to connect to PosgreSQL
 ```bash
 az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
 ```
@@ -96,17 +97,17 @@ az account get-access-token --resource-type oss-rdbms --query accessToken --outp
 ```bash
 ansible-playbook playbook.yml -e '{
   "database_config": {
-    "login_host": "new_host", 
-    "login_user": "new_user", 
-    "login_password": "new_password", 
-    "owner": "new_owner"
+    "login_host": "<posgres-host>", 
+    "login_user": "<admin-group-name>@<server-name>", 
+    "login_password": "<az-cli-token>", 
+    "owner": "<admin-group-name>"
   }, 
   "keyvault_config": {
-    "client_id": "new_client_id", 
-    "secret": "new_secret", 
-    "subscription_id": "new_subscription_id", 
-    "tenant": "new_tenant", 
-    "keyvault_uri": "new_uri"
+    "client_id": "<sp-client-id>", 
+    "secret": "<sp-secret>", 
+    "subscription_id": "<sp-subscription>-id", 
+    "tenant": "<sp-tenant-id>", 
+    "keyvault_uri": "<vault-url>"
   }
 }'
 ```
