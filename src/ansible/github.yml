@@ -1,0 +1,6 @@
+- name: Db Config
+  hosts: localhost
+  tasks:
+    - name: Print database names
+    debug:
+      var: hello_world
