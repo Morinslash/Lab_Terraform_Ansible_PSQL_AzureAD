@@ -14,7 +14,7 @@ jobs:
     services:
       ansible:
         image: docker.io/morinslash/ansible-azure:v1
-        options: --mount type=bind,source="${{ github.workspace }}",target=/ansible
+        options: --mount type=bind,source="${{ github.workspace }}",target=/ansible --name ansible
 
     steps:
     - name: Checkout
