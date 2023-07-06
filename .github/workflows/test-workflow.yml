@@ -19,9 +19,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
-    - name: Run Ansible Playbook
-      env:
-        HELLO_WORLD: ${{ github.event.inputs.hello_world }}
+    - name: list running containers
       run: |
-        docker exec ansible ansible-playbook src/ansible/github.yml -e "hello_world=${HELLO_WORLD}"
+        docker ps
+
+#     - name: Run Ansible Playbook
+#       env:
+#         HELLO_WORLD: ${{ github.event.inputs.hello_world }}
+#       run: |
+#         docker exec ansible ansible-playbook src/ansible/github.yml -e "hello_world=${HELLO_WORLD}"
