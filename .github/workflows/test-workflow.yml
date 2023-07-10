@@ -27,4 +27,4 @@ jobs:
       env:
         HELLO_WORLD: ${{ github.event.inputs.hello_world }}
       run: |
-        docker exec ansible ansible-playbook src/ansible/github.yml -e "hello_world=${HELLO_WORLD}"
+        docker exec ansible ansible-playbook src/ansible/test-script/github.yml -e "hello_world=${HELLO_WORLD}"
