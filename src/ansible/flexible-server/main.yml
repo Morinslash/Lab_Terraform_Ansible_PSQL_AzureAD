@@ -1,0 +1,20 @@
+- name: Db Config
+  hosts: localhost
+  vars_files:
+    - var_file.yml
+    - db_names.yml
+  tasks:
+    - name: Service Principal Login
+      command: >
+        az login --service-principal
+        --username "{{ azconfig.client_id }}"
+        --password "{{ azconfig.secret }}"
+        --tenant "{{ azconfig.tenant_id }}"
+    - name: Get Database Toekn
+      command: >
+        az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
+      register: get_token
+    - name: Set Token Value
+      set_fact:
+        db_access_token: "{{ get_token.stdout_lines }}"
+    
