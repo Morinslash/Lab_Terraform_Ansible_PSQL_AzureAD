@@ -1,10 +1,82 @@
+- name: Set Role name
+  set_fact:
+    db_role_name: "{{ database }}-developer"
+- name: Set connection
+  set_fact:
+    pg_connect: &pg_connect
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ db_access_token }}"
+      ssl_mode: "require"   
 - name: Get AAD Group ID
   command: >
-    az ad group show --group "{{ database }}-developer" --query id --output tsv
+    az ad group show --group "{{ db_role_name }}" --query id --output tsv
   register: get_group_id
 - name: Set Token Value
   set_fact:
     aad_group_id: "{{ get_group_id.stdout_lines.0 }}"
-- name: Debug fact
-  debug:
-    var: aad_group_id
+- name: CREATE ROLE {{ db_role_name }} WITH LOGIN
+  community.postgresql.postgresql_user:
+    <<: *pg_connect
+    db: postgres
+    name: "{{ db_role_name }}"
+    role_attr_flags: LOGIN
+- name: Map Role To Azure AAD Group
+  community.postgresql.postgresql_query:
+    <<: *pg_connect
+    db: "{{ database }}"
+    query: SECURITY LABEL for "pgaadauth" on role "{{ db_role_name }}" is 'aadauth,oid={{ aad_group_id }},type=group';
+- name: GRANT CONNECT ON DATABASE {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ database }}"
+    state: present
+    privs: CONNECT
+    type: database
+    role: "{{ db_role_name }}"
+- name: GRANT USAGE ON SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ database }}"
+    state: present
+    privs: USAGE
+    type: schema
+    objs: public
+    role: "{{ db_role_name }}"
+- name: GRANT SELECT INSERT UPDATE DELETE ON ALL TABLES IN SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      privs: SELECT,INSERT,UPDATE,DELETE
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT SELECT INSERT UPDATE DELETE ON TABLE TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      obj: TABLES
+      privs: SELECT,INSERT,UPDATE,DELETE
+      type: default_privs
+      role: "{{ db_role_name }}"
+- name: GRANT USAGE ON ALL SEQUENCES IN SCHEMA PUBLIC TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT USAGE ON SEQUENCES TO {{ db_role_name }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
