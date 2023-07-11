@@ -10,11 +10,20 @@
         --username "{{ azconfig.client_id }}"
         --password "{{ azconfig.secret }}"
         --tenant "{{ azconfig.tenant_id }}"
-    - name: Get Database Toekn
+    - name: Get Database Token
       command: >
         az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
       register: get_token
     - name: Set Token Value
       set_fact:
-        db_access_token: "{{ get_token.stdout_lines }}"
+        db_access_token: "{{ get_token.stdout_lines.0 }}"
+    - name: Create and Configure Databases
+      ansible.builtin.include_tasks: database_config.yml
+      loop: "{{ databases }}"
+      loop_control:
+        loop_var: database
+        extended: yes
+    - name: Debug fact
+      debug:
+        var: databases
     

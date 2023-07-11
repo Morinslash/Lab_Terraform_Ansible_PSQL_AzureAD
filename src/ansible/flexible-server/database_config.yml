@@ -1,0 +1,35 @@
+- name: Set connection
+  set_fact:
+    pg_connect: &pg_connect
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ db_access_token }}"
+      ssl_mode: "require"
+- name: Create "{{ database }}" database
+  community.postgresql.postgresql_db:
+    <<: *pg_connect
+    name: "{{ database }}"
+    encoding: UTF-8
+- name: ALTER SCHEMA PUBLIC OWNER TO {{ database_config.login_user }}
+  community.postgresql.postgresql_schema:
+    <<: *pg_connect
+    db: "{{ database }}"
+    name: public
+    owner: "{{ database_config.login_user }}"
+- name: REVOKE CREATE ON SCHEMA PUBLIC FROM PUBLIC
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    db: "{{ database }}"
+    state: absent
+    type: schema
+    objs: public
+    privs: create
+    role: public
+- name: REVOKE ALL ON DATABASE {{ database }} FROM PUBLIC
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    db: "{{ database }}"
+    state: absent
+    type: database
+    privs: all
+    role: public
