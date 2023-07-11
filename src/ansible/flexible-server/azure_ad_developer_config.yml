@@ -1,0 +1,10 @@
+- name: Get AAD Group ID
+  command: >
+    az ad group show --group "{{ database }}-developer" --query id --output tsv
+  register: get_group_id
+- name: Set Token Value
+  set_fact:
+    aad_group_id: "{{ get_group_id.stdout_lines.0 }}"
+- name: Debug fact
+  debug:
+    var: aad_group_id
