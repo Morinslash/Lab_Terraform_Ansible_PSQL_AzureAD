@@ -17,19 +17,25 @@
     - name: Set Token Value
       set_fact:
         db_access_token: "{{ get_token.stdout_lines.0 }}"
-    # - name: Create and Configure Databases
-    #   ansible.builtin.include_tasks: database_config.yml
-    #   loop: "{{ databases }}"
-    #   loop_control:
-    #     loop_var: database
-    #     extended: yes
+    - name: Create and Configure Databases
+      ansible.builtin.include_tasks: database_config.yml
+      loop: "{{ databases }}"
+      loop_control:
+        loop_var: database
+        extended: yes
     - name: Configure Developer Access
       ansible.builtin.include_tasks: azure_ad_developer_config.yml
       loop: "{{ databases }}"
       loop_control:
         loop_var: database
         extended: yes
-    - name: Debug fact
-      debug:
-        var: databases
+    - name: Configure Application Access
+      ansible.builtin.include_tasks: application_user_config.yml
+      loop: "{{ databases }}"
+      loop_control:
+        loop_var: database
+        extended: yes
+    - name: Logout from Azure
+      command: >
+        az logout
     

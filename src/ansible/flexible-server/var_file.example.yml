@@ -1,0 +1,9 @@
+azconfig:
+  client_id: <sp-client-id>
+  secret: <sp-secret>
+  tenant_id: <sp-tenant-id>
+database_config:
+  login_host: <posgres-host>
+  login_user: <username>
+keyvault_config:
+  keyvault_uri: <vault-url>

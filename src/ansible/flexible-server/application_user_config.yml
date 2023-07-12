@@ -1,32 +1,21 @@
-- name: Set Role name
+- name: Set connection data
   set_fact:
-    db_role_name: "{{ database }}-developer"
-- name: Set connection
-  set_fact:
+    db_role_name: "{{ database }}-app"
+    user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,hexdigits') }}"
     pg_connect: &pg_connect
       login_host: "{{ database_config.login_host }}"
       login_user: "{{ database_config.login_user }}"
       login_password: "{{ db_access_token }}"
-      ssl_mode: "require"   
-- name: Get AAD Group ID
-  command: >
-    az ad group show --group "{{ db_role_name }}" --query id --output tsv
-  register: get_group_id
-- name: Set Token Value
-  set_fact:
-    aad_group_id: "{{ get_group_id.stdout_lines.0 }}"
+      ssl_mode: "require"
 - name: CREATE ROLE {{ db_role_name }} WITH LOGIN
   community.postgresql.postgresql_user:
     <<: *pg_connect
     db: postgres
     name: "{{ db_role_name }}"
-    role_attr_flags: LOGIN
+    password: "{{ user_password }}"
     no_password_changes: true
-- name: Map Role To Azure AAD Group
-  community.postgresql.postgresql_query:
-    <<: *pg_connect
-    db: "{{ database }}"
-    query: SECURITY LABEL for "pgaadauth" on role "{{ db_role_name }}" is 'aadauth,oid={{ aad_group_id }},type=group';
+    role_attr_flags: LOGIN
+  register: user_update
 - name: GRANT CONNECT ON DATABASE {{ db_role_name }}
   community.postgresql.postgresql_privs:
     <<: *pg_connect
@@ -81,3 +70,7 @@
       type: sequence
       objs: ALL_IN_SCHEMA
       role: "{{ db_role_name }}"
+- name: Update "{{ db_role_name }}" secret in key vault
+  command: >
+    az keyvault secret set --name "{{ db_role_name }}" --vault-name "{{ keyvault_name }}" --value "{{ user_password }}"
+  when: user_update is changed
