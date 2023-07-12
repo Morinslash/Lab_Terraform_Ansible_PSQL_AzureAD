@@ -71,12 +71,6 @@
       objs: ALL_IN_SCHEMA
       role: "{{ db_role_name }}"
 - name: Update "{{ db_role_name }}" secret in key vault
-  azure.azcollection.azure_rm_keyvaultsecret:
-    client_id: "{{ keyvault_config.client_id }}"
-    secret: "{{ keyvault_config.secret }}"
-    subscription_id: "{{ keyvault_config.subscription_id }}"
-    tenant: "{{ keyvault_config.tenant }}"
-    secret_name: "{{ db_role_name }}"
-    secret_value: "{{ user_password }}"
-    keyvault_uri: "{{ keyvault_config.keyvault_uri}}"
+  command: >
+    az keyvault secret set --name "{{ db_role_name }}" --vault-name "{{ keyvault_name }}" --value "{{ user_password }}"
   when: user_update is changed

@@ -1,8 +1,14 @@
 - name: Db Config
   hosts: localhost
   vars_files:
-    - var_file.example.yml
+    - var_file.yml
   tasks:
+    - name: Service Principal Login
+      command: >
+        az login --service-principal
+        --username "{{ azconfig.client_id }}"
+        --password "{{ azconfig.secret }}"
+        --tenant "{{ azconfig.tenant_id }}"
     - name: Get Databases Full Info
       community.postgresql.postgresql_info:
         login_host: "{{ database_config.login_host }}"
@@ -27,3 +33,6 @@
     - name: Create Aoplication User
       ansible.builtin.include_tasks: application_user_config.yml
       loop: "{{ db_names }}"
+    - name: Logout from Azure
+      command: >
+        az logout
