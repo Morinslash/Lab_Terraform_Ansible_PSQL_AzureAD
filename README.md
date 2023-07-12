@@ -18,12 +18,16 @@ Check [Dockerfile](dockerfile)
 docker build -t ansible-image:v1.0 .
 ```
 
+```powershell
+docker build -t morinslash/ansible-azure:v1 . ; docker push morinslash/ansible-azure:v1
+```
+
 Run container and get instantly into bash
 
 *This container will auto-dispose when shell exited*
 
 ```bash
-docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/bash ansible-image:v1.0
+docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/bash morinslash/ansible-azure:v1
 ```
 ### Postgres
 Local Posgresql instance for development Ansible Script
