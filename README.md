@@ -1,117 +1,125 @@
-# Automation of setting up Azure Postgresql integration with AzureAD
-
-Purpose of lab is to provide automated way to setup integration between managed instance of Postgresql in Azure and Azure Active Directory.
-
-This should provide users access to database when they are member of proper group in AzureAD to the database with controlled permissions.
+# Ansible Playbook for automatized integration of Azure PostgreSQL with Azure AD
 
 ## Tools
-- Terraform
+
 - Ansible
+- Docker
 
-## Setting up local environment  
-### Ansible
-Building local image for Ansible with all required dependencies
+## Docker
 
-Check [Dockerfile](dockerfile)
+[dockerfile](dockerfile) will build a container image with all of the required dependencies of Ansible, Azure Cli and PostgreSQL Collection
+
+Build image with locally
 
 ```bash
 docker build -t ansible-image:v1.0 .
 ```
 
-```powershell
-docker build -t morinslash/ansible-azure:v1 . ; docker push morinslash/ansible-azure:v1
-```
-
-Run container and get instantly into bash
-
-*This container will auto-dispose when shell exited*
+To run a image locally:
 
 ```bash
-docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/bash morinslash/ansible-azure:v1
-```
-### Postgres
-Local Posgresql instance for development Ansible Script
-```bash
-docker run --name mypostgres -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=admin -p 5432:5432 postgres:11
-```
-inspect network to find IP of the database container
-```bash
-docker network inspect bridge
+docker run -it --rm -v ${PWD}:/src -w /src --entrypoint /bin/bash ansible-azure:v1
 ```
 
-To check if container is reachable inside docker network, run
-```bash
-docker run -it --rm alpine ping <postgres-ip>
-```
+This command will automatically enter to the shell of the container and mount the current path into the container. 
 
-## Pre-configuration for Ansible Playbook for local experiments
+The `--rm` flag will remove the container on exiting the shell.
 
-In order to execute locally playbook with Postgresql container there are few required steps to do manually
--   Create role named **azure_ad_user**
--   Create databases for which we want to create users
+## The general overview of setup
 
-## Pre-configuration for Ansible Playbook for Azure PosgreSQL Single Server
+Both playbook automatize the integration of PostgreSQL with Azure AD and the goal of them is to:
+- Create and/or configure PostgreSQL instance to control access to databases. 
+- For each database create an integrated Role with Azure AD Group, members of this group will be able connect to the database server using **group name** and token generated with `az cli`
+- For each database create an Role with autogenerate password that would be stored automatically in the **Azure Key Vault**
+- Both Developers Role and Application role will have *SELECT*, *INSERT*, *UPDATE*, *DELETE* permission within database to operate on records
 
-In order to execute playbook with Postgresql Single Server in Azure there are few required steps to do manually
--   Set the **Active Directory admin** to a group
--   Create databases for which we want to create users
--   Create Azure AD Groups with names following pattern \<database-name>-developer
--   Create Key Vault
--   Create Service Principal with permissions to Key Vault
+## Know limitations
 
----
-## Testing Configuration
-### [Test SQL](test.sql)
+Azure provides integration with Azure AD for PostgreSQL servers so users, group, service principals and managed identities can leverage the Azure AD system to obtain *token* that can be used as a password to authenticate to the server.
 
-| User           | Test                         | Local | Azure Psql |
-| -------------- | ---------------------------- | ----- | ---------- |
-| Admin          | ---                          | ---   | ---        |
-|                | Access to all DB             | x     | x          |
-|                | DBs ownership                | x     | x          |
-|                | Create Table                 | x     | x          |
-|                | Insert data                  | x     | x          |
-|                | Select other user            | x     | x          |
-|                | Drop Table                   | x     | x          |
-| ReadWrite user | ---                          | ---   | ---        |
-|                | Member of **azure_ad_user**  | x     | x          |
-|                | One DB access                | x     | x          |
-|                | No Drop, Create              | x     | x          |
-|                | Select Admin data            | x     | x          |
-|                | Update data                  | x     | x          |
-|                | Insert data                  | x     | x          |
-|                | Delete data                  | x     | x          |
-| ReadWrite app  | ---                          |       |            |
-|                | Auto-generate password in KV | x     | x          |
+This doesn't mean we can use our AAD credentials directly but we have to generate an access token first using `az cli` command:
 
----
-## Accessing Azure Posgresql
-
-Login to Azure
-```bash
-az login
-```
-
-Obtain token to connect to PosgreSQL
 ```bash
 az account get-access-token --resource-type oss-rdbms --query accessToken --output tsv
 ```
 
-## Running playbook and providing var over CLI
+Further more if we do not integrate directly users and service principals but groups instead as a **username** to connect to the instance we should use **Azure AD group name**.
+
+### Single Server
+
+Azure PostgreSQL Single Server doesn't allow Service Principals to have full administrator permissions even if they belong to the same group as regular Azure AD Users. Significant one for this PoC is the limitation of not being able to grant other roles **azure_ad_user** role, which have impact on automatization possibilities as we have to provide a *token* for each run of the playbook generated by the **Azure AD User**. This restriction is removed in Flexible Server.
+
+## Prerequisites
+
+For both Playbooks to run we will need:
+
+- Azure PostgreSQL instances, respectively Flexible or Single Server
+  - Single Server with Azure Directory Admin integrated with AzureAD Group
+  - Flexible Server with both PostgreSQL and Azure AD authentication
+- Azure KeyVault for storing passwords after creating Application roles
+- Service Principals with access to
+  - KeyVault to create secrets
+  - Directory Readers permissions to fetch Groups ID from AzureAD tenant (Flexible Server)
+- Az Cli installed
+
+## Other
+
+Please keep in mind that the process of automatization is different for Single Server and Flexible Server instance. Check Official Documentation for details.
+
+In the Single Server implementation Ansible is not responsible for creating Databases inside the instance. The script is fetching instance information and filtering out databases names to configure.
+
+In the Flexible Server implementation Ansible will create the database that we can pass as a variables into the script for full control of the automatization. 
+
+## Environmental Variables
+
+For required variables check:
+
+[Single Server](./src/ansible/single-server/var_file.example.yml)
+[Flexible Server](./src/ansible/flexible-server/var_file.example.yml) and [Databases Names](./src/ansible/flexible-server/db_names.yml)
+
+## Running Ansible Playbook over `cli` and providing env variables (example)
 
 ```bash
 ansible-playbook playbook.yml -e '{
-  "database_config": {
-    "login_host": "<posgres-host>", 
-    "login_user": "<admin-group-name>@<server-name>", 
-    "login_password": "<az-cli-token>", 
-    "owner": "<admin-group-name>"
-  }, 
-  "keyvault_config": {
+  "azconfig": {
     "client_id": "<sp-client-id>", 
     "secret": "<sp-secret>", 
     "subscription_id": "<sp-subscription>-id", 
-    "tenant": "<sp-tenant-id>", 
-    "keyvault_uri": "<vault-url>"
-  }
+  },
+  "database_config": {
+    "login_host": "<postgres-host>", 
+    "login_user": "<admin-group-name>@<server-name>", 
+    "login_password": "<az-cli-token>", 
+    "owner": "<admin-group-name>"
+  },
+  "keyvault_name": "<keyvault-name>"
 }'
 ```
+
+## GitHub Actions example workflow
+
+[test-script](./src/ansible/test-script/) contains simple PoC playbook that is printing back provided environment variable. The purpose was to test the [workflow](.github/workflows/test-workflow.yml) that could be run manually in the GitHub Actions with a required variable that must be provided on dispatching action. 
+
+This workflow is using a *service container* with preinstalled all of the dependencies and  mounted runner workspace. After checkout of repo into runner all files are availabe inside the container so we can execute the Ansible playbook and pass variables with command:
+
+```bash
+docker exec <name-of-service-container> ansible-playbook <path/to/playbook> -e "<variables>"
+``` 
+
+## Official Documentation
+
+### Single Server
+[Use Azure Active Directory for authentication with PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/single-server/how-to-configure-sign-in-azure-ad-authentication)
+
+[Use Azure Active Directory for authenticating with PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/single-server/concepts-azure-ad-authentication)
+
+### Flexible Server
+[Azure Active Directory Authentication with PostgreSQL Flexible Server](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-azure-ad-authentication?source=recommendations)
+
+[Use Azure AD for authentication with Azure Database for PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-configure-sign-in-azure-ad-authentication?source=recommendations)
+
+[Manage Azure Active Directory roles in Azure Database for PostgreSQL](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-manage-azure-ad-users)
+
+### Ansible PostgreSQL collection
+
+[Community.Postgresql](https://docs.ansible.com/ansible/latest/collections/community/postgresql/index.html)

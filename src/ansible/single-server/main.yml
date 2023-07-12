@@ -27,12 +27,21 @@
     - name: Configure Databases
       ansible.builtin.include_tasks: database_config.yml
       loop: "{{ db_names }}"
+      loop_control:
+        loop_var: database
+        extended: yes
     - name: Create Developer Role
       ansible.builtin.include_tasks: azure_ad_developer_config.yml
-      loop: "{{ db_names }}"    
+      loop: "{{ db_names }}"
+      loop_control:
+        loop_var: database
+        extended: yes    
     - name: Create Aoplication User
       ansible.builtin.include_tasks: application_user_config.yml
       loop: "{{ db_names }}"
+      loop_control:
+        loop_var: database
+        extended: yes
     - name: Logout from Azure
       command: >
         az logout

@@ -8,22 +8,22 @@
 - name: ALTER SCHEMA PUBLIC OWNER TO {{ database_config.owner }}
   community.postgresql.postgresql_schema:
     <<: *pg_connect
-    db: "{{ item }}"
+    db: "{{ database }}"
     name: public
     owner: "{{ database_config.owner }}"
 - name: REVOKE CREATE ON SCHEMA PUBLIC FROM PUBLIC
   community.postgresql.postgresql_privs:
     <<: *pg_connect
-    db: "{{ item }}"
+    db: "{{ database }}"
     state: absent
     type: schema
     objs: public
     privs: create
     role: public
-- name: REVOKE ALL ON DATABASE {{ item }} FROM PUBLIC
+- name: REVOKE ALL ON DATABASE {{ database }} FROM PUBLIC
   community.postgresql.postgresql_privs:
     <<: *pg_connect
-    db: "{{ item }}"
+    db: "{{ database }}"
     state: absent
     type: database
     privs: all

@@ -1,6 +1,6 @@
 - name: Set connection data
   set_fact:
-    db_role_name: "{{ item }}-developer"
+    db_role_name: "{{ database }}-developer"
     pg_connect: &pg_connect
       login_host: "{{ database_config.login_host }}"
       login_user: "{{ database_config.login_user }}"
@@ -23,7 +23,7 @@
 - name: GRANT CONNECT ON DATABASE {{ db_role_name }}
   community.postgresql.postgresql_privs:
     <<: *pg_connect
-    database: "{{ item }}"
+    database: "{{ database }}"
     state: present
     privs: CONNECT
     type: database
@@ -31,7 +31,7 @@
 - name: GRANT USAGE ON SCHEMA PUBLIC TO {{ db_role_name }}
   community.postgresql.postgresql_privs:
     <<: *pg_connect
-    database: "{{ item }}"
+    database: "{{ database }}"
     state: present
     privs: USAGE
     type: schema
@@ -40,7 +40,7 @@
 - name: GRANT SELECT INSERT UPDATE DELETE ON ALL TABLES IN SCHEMA PUBLIC TO {{ db_role_name }}
   community.postgresql.postgresql_privs:
       <<: *pg_connect
-      database: "{{ item }}"
+      database: "{{ database }}"
       state: present
       privs: SELECT,INSERT,UPDATE,DELETE
       objs: ALL_IN_SCHEMA
@@ -48,7 +48,7 @@
 - name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT SELECT INSERT UPDATE DELETE ON TABLE TO {{ db_role_name }}
   community.postgresql.postgresql_privs:
       <<: *pg_connect
-      database: "{{ item }}"
+      database: "{{ database }}"
       state: present
       obj: TABLES
       privs: SELECT,INSERT,UPDATE,DELETE
@@ -57,7 +57,7 @@
 - name: GRANT USAGE ON ALL SEQUENCES IN SCHEMA PUBLIC TO {{ db_role_name }}
   community.postgresql.postgresql_privs:
       <<: *pg_connect
-      database: "{{ item }}"
+      database: "{{ database }}"
       state: present
       schema: public
       privs: USAGE
@@ -67,7 +67,7 @@
 - name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT USAGE ON SEQUENCES TO {{ db_role_name }}
   community.postgresql.postgresql_privs:
       <<: *pg_connect
-      database: "{{ item }}"
+      database: "{{ database }}"
       state: present
       schema: public
       privs: USAGE
