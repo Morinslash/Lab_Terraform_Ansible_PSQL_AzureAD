@@ -74,3 +74,8 @@
       type: sequence
       objs: ALL_IN_SCHEMA
       role: "{{ db_role_name }}"
+- name: GIVE INSERT WITH SEQUENCES
+  community.postgresql.postgresql_query:
+    <<: *pg_connect
+    db: "{{ database }}"
+    query: alter default privileges in schema public grant usage on sequences to "{{ db_role_name }}";

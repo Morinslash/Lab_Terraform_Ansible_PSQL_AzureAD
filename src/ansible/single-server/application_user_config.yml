@@ -70,6 +70,11 @@
       type: sequence
       objs: ALL_IN_SCHEMA
       role: "{{ db_role_name }}"
+- name: GIVE INSERT WITH SEQUENCES
+  community.postgresql.postgresql_query:
+    <<: *pg_connect
+    db: "{{ database }}"
+    query: alter default privileges in schema public grant usage on sequences to "{{ db_role_name }}";
 - name: Update "{{ db_role_name }}" secret in key vault
   command: >
     az keyvault secret set --name "{{ db_role_name }}" --vault-name "{{ keyvault_name }}" --value "{{ user_password }}"
