@@ -1,0 +1,73 @@
+- name: Set connection data
+  set_fact:
+    db_role_name: "{{ application.name }}"
+    pg_connect: &pg_connect
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ database_config.login_password }}"
+
+- name: GRANT CONNECT ON DATABASE {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ database }}"
+    state: present
+    privs: CONNECT
+    type: database
+    role: "{{ db_role_name }}"
+
+- name: GRANT USAGE ON SCHEMA PUBLIC TO {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+    <<: *pg_connect
+    database: "{{ database }}"
+    state: present
+    privs: USAGE
+    type: schema
+    objs: public
+    role: "{{ db_role_name }}"
+
+- name: GRANT SELECT INSERT UPDATE DELETE ON ALL TABLES IN SCHEMA PUBLIC TO {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      privs: SELECT,INSERT,UPDATE,DELETE
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT SELECT INSERT UPDATE DELETE ON TABLE TO {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      obj: TABLES
+      privs: SELECT,INSERT,UPDATE,DELETE
+      type: default_privs
+      role: "{{ db_role_name }}"
+
+- name: GRANT USAGE ON ALL SEQUENCES IN SCHEMA PUBLIC TO {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+
+- name: ALTER DEFAULT PRIVILEGES IN SCHEMA PUBLIC GRANT USAGE ON SEQUENCES TO {{ db_role_name }} || {{ database }}
+  community.postgresql.postgresql_privs:
+      <<: *pg_connect
+      database: "{{ database }}"
+      state: present
+      schema: public
+      privs: USAGE
+      type: sequence
+      objs: ALL_IN_SCHEMA
+      role: "{{ db_role_name }}"
+
+- name: GIVE INSERT WITH SEQUENCES
+  community.postgresql.postgresql_query:
+    <<: *pg_connect
+    db: "{{ database }}"
+    query: alter default privileges in schema public grant usage on sequences to "{{ db_role_name }}";

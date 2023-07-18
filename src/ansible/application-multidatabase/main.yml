@@ -1,0 +1,34 @@
+- name: Db Config
+  hosts: localhost
+  vars_files:
+    - var_file.yml
+    - applications_list.yml
+
+  tasks:
+    - name: Get Databases Full Info
+      community.postgresql.postgresql_info:
+        login_host: "{{ database_config.login_host }}"
+        login_user: "{{ database_config.login_user }}"
+        login_password: "{{ database_config.login_password }}"
+        # ssl_mode: "require"
+        db: postgres
+        filter: "databases"
+      register: db_list_full_info
+
+    - name: Get Databases Names and Filter defaults
+      set_fact:
+        db_names: "{{ db_list_full_info['databases'] | dict2items | map(attribute='key') | list | difference(['postgres', 'template1', 'azure_maintenance', 'azure_sys', 'admin']) }}"
+
+    - name: Configure Databases
+      ansible.builtin.include_tasks: database_config.yml
+      loop: "{{ db_names }}"
+      loop_control:
+        loop_var: database
+        extended: yes
+
+    - name: Configure Application Access
+      ansible.builtin.include_tasks: application_user_config.yml
+      loop: "{{ applications }}"
+      loop_control:
+        loop_var: application
+        extended: yes

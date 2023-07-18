@@ -1,0 +1,48 @@
+- name: Set connection data
+  set_fact:
+    db_role_name: "{{ application.name }}"
+    user_password: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits,hexdigits') }}"
+    pg_connect: &pg_connect
+      login_host: "{{ database_config.login_host }}"
+      login_user: "{{ database_config.login_user }}"
+      login_password: "{{ database_config.login_password }}"
+#      ssl_mode: "require"
+
+- name: CREATE ROLE {{ db_role_name }} WITH LOGIN
+  community.postgresql.postgresql_user:
+    <<: *pg_connect
+    db: postgres
+    name: "{{ db_role_name }}"
+    password: "{{ user_password }}"
+    no_password_changes: true
+    role_attr_flags: LOGIN
+  register: user_update
+
+#  Filter out the non existing dbs
+- name: Calculate Intersection
+  set_fact:
+    existing_databases: "{{ db_names | intersect(application.accessTo) }}"
+
+- name: Calculate Non-existing Databases
+  set_fact:
+    non_existing_databases: "{{ application.accessTo | difference(db_names) }}"
+
+- name: Print warning if any non-existing in the list
+  fail:
+    msg: |
+      Existing : {{ existing_databases }}
+      Non-existing Databases: {{ non_existing_databases }}
+  ignore_errors: true
+  when: non_existing_databases | length > 0
+
+- name: Configure Access to Databases
+  ansible.builtin.include_tasks: application_permissions.yml
+  loop: "{{ existing_databases }}"
+  loop_control:
+    loop_var: database
+    extended: yes
+
+# Debug output for local experiment
+- name: Print password
+  debug:
+    var: user_password

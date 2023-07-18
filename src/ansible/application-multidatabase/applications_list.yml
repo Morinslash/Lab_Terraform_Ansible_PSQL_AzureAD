@@ -1,0 +1,9 @@
+applications:
+  - name: app1
+    accessTo:
+      - db1
+      - db2
+  - name: app2
+    accessTo:
+      - db3
+      - db2
